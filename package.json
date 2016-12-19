@@ -1,0 +1,11 @@
+{
+  "name": "node-bully",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Johan Hellgren <hellgrenj@gmail.com> (johanhellgren.se)",
+  "license": "MIT"
+}
