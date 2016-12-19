@@ -14,7 +14,7 @@ you can also add number of nodes, defaults to 5: <code>node demo 7</code>
 ### demo structure
 **./lib/node.js**  *this is the bully algorithm implementation (as a lib)*  
 **./wrapper/http.js** *this wrapper lets a node communicate over http (simulating a service using the lib)*  
-**./demo.js** *this scripts runs the demo*
+**./demo.js** *this script runs the demo*
 
 
 ### demo explained
