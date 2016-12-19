@@ -1,7 +1,9 @@
 'use strict';
 
+
 //clear screen
 console.log('\u001B[2J\u001B[0;0f');
+console.log('(Quit with CTRL + C)\n');
 
 const http = require('http');
 const fork = require('child_process').fork;
