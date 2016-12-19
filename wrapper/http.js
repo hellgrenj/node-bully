@@ -24,29 +24,20 @@ http.createServer(function(request, response) {
 
 // internal event handlers
 node.events.on('ELECTION', (e) => {
-    const recipientId = node.peers.find((peerId) => {
-        return peerId == e.to;
-    });
-    sendToPeer(recipientId, {
+    sendToPeer(e.to, {
         type: 'ELECTION',
         sender: node.id
     }, (resp) => {});
 });
 node.events.on('ANSWER', (e) => {
-    const recipientId = node.peers.find((peerId) => {
-        return peerId == e.to;
-    });
-    sendToPeer(recipientId, {
+    sendToPeer(e.to, {
         type: 'ANSWER',
         sender: node.id
     }, (resp) => {});
 
 });
 node.events.on('COORDINATOR', (e) => {
-    const recipientId = node.peers.find((peerId) => {
-        return peerId == e.to;
-    });
-    sendToPeer(recipientId, {
+    sendToPeer(e.to, {
         type: 'COORDINATOR',
         sender: node.id
     }, (resp) => {});
