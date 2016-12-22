@@ -3,7 +3,10 @@
 const http = require('http');
 const nodeFactory = require('../lib/node');
 const port = process.argv[2]; //node = 0, http.js = 1, {port} = 2
-const node = nodeFactory(port); //use port also as ID for node
+
+const nodeId = port;
+const relativeElectionResponseTimeout = 100; // will be multiplied by the number of peers
+const node = nodeFactory(nodeId, relativeElectionResponseTimeout);
 const httpWrapper = {};
 
 // public endpoints
@@ -19,28 +22,28 @@ http.createServer(function(request, response) {
         response.end();
     }
 }).listen(port).on('listening', () => {
-  process.send('up_and_running');
+    process.send('up_and_running');
 });
 
 // internal event handlers
 node.events.on('ELECTION', (e) => {
     sendToPeer(e.to, {
         type: 'ELECTION',
-        sender: node.id
-    }, (resp) => {});
+        sender: e.from
+    });
 });
 node.events.on('ANSWER', (e) => {
     sendToPeer(e.to, {
         type: 'ANSWER',
-        sender: node.id
-    }, (resp) => {});
+        sender: e.from
+    });
 
 });
 node.events.on('COORDINATOR', (e) => {
     sendToPeer(e.to, {
         type: 'COORDINATOR',
-        sender: node.id
-    }, (resp) => {});
+        sender: e.from
+    });
 });
 
 // private functions
@@ -64,7 +67,6 @@ function pingLeaderOnAnInterval() {
                         node.removePeer(node.currentLeader);
                     }
                 });
-
             });
             req.write('PING');
             req.on('error', function(err) {
@@ -110,33 +112,20 @@ function addPeers(request, response) {
     });
 }
 
-function sendToPeer(port, payload, done) {
+function sendToPeer(port, payload) {
     const req = http.request({
         host: 'localhost',
         path: '/inbox',
         port: port,
         method: 'POST'
-    }, function(response) {
-        let str = '';
-        response.on('data', function(chunk) {
-            str += chunk;
-        });
-        response.on('end', function() {
-            done(str);
-        });
     });
     req.write(JSON.stringify(payload));
     req.end();
 }
 
 function ping(request, response) {
-    let body = '';
-    request.on('data', function(chunk) {
-        body += chunk;
-    }).on('end', function() {
-        response.writeHead(200, {
-            'Content-Type': 'text/plain'
-        });
-        response.end('PONG');
+    response.writeHead(200, {
+        'Content-Type': 'text/plain'
     });
+    response.end('PONG');
 }

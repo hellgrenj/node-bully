@@ -1,6 +1,5 @@
 'use strict';
 
-
 //clear screen
 console.log('\u001B[2J\u001B[0;0f');
 console.log('(Quit with CTRL + C)\n');
@@ -85,24 +84,17 @@ function introduceNodes(nodes, done, index) {
         method: 'POST'
     };
     const req = http.request(options, function(response) {
-        let str = '';
-        response.on('data', function(chunk) {
-            str += chunk;
-        });
-        response.on('end', function() {
-            if (response.statusCode == 200) {
-                index++;
-                if (index < nodeIds.length) {
-                    introduceNodes(nodes, done, index);
-                } else {
-                    done();
-                }
+        if (response.statusCode == 200) {
+            index++;
+            if (index < nodeIds.length) {
+                introduceNodes(nodes, done, index);
             } else {
-                console.log('failed to initiate node, responded with status code', response.statusCode);
-                process.exit(1);
+                done();
             }
-
-        });
+        } else {
+            console.log('failed to initiate node, responded with status code', response.statusCode);
+            process.exit(1);
+        }
     });
     req.write(JSON.stringify(nodeIds));
     req.end();
@@ -111,18 +103,18 @@ function introduceNodes(nodes, done, index) {
 function bringInitialLeaderBackOnline(done) {
     const initialLeaderIndex = nodes.length - 1;
     const initialLeader = nodes[initialLeaderIndex];
-    nodes[initialLeaderIndex].proc = fork('./wrapper/http', [initialLeader.id], {
+    initialLeader.proc = fork('./wrapper/http', [initialLeader.id], {
         silent: true
     });
-    nodes[initialLeaderIndex].proc.on('message', (msg) => {
+    initialLeader.proc.on('message', (msg) => {
         if (msg === 'up_and_running') {
             introduceNodes(nodes, done);
         }
     });
-    nodes[initialLeaderIndex].proc.stdout.on('data', function(data) {
+    initialLeader.proc.stdout.on('data', function(data) {
         console.log(`[${initialLeader.id}] says: ${data}`);
     });
-    nodes[initialLeaderIndex].proc.stdout.on('error', function(error) {
+    initialLeader.proc.stdout.on('error', function(error) {
         console.log(`[${initialLeader.id}] errors: ${error}`);
     });
 }
