@@ -185,6 +185,7 @@ function rougeHttpNodeClaimThrone(port) {
   }));
   req.end();
 }
+
 function rougeGrpcNodeClaimThrone(port) {
   const node_proto = grpc.load('./node.proto').nodeproto;
   let client = new node_proto.Peer('0.0.0.0:' + port,
