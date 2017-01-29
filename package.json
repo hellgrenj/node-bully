@@ -4,8 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Eh..No..\" && exit 0"
   },
   "author": "Johan Hellgren <hellgrenj@gmail.com> (johanhellgren.se)",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "grpc": "^1.0.1"
+  }
 }

@@ -8,17 +8,19 @@ more about the algorithm: https://en.wikipedia.org/wiki/Bully_algorithm
 * clone this git repository
 
 ### run demo  
-<code>node demo</code>  
-you can also add number of nodes, defaults to 5: <code>node demo 7</code>
+* run <code>npm install</code>  
+* run <code>node demo 5 http</code> or <code>node demo 7 grpc</code>  
+
 
 ### demo structure
 **./lib/node.js**  *this is the bully algorithm implementation (as a lib)*  
 **./wrapper/http.js** *this wrapper lets a node communicate over http (simulating a service using the lib)*  
+**./wrapper/grpc.js** *this wrapper lets a node communicate over grpc (simulating a service using the lib)*  
 **./demo.js** *this script runs the demo*
 
 
 ### demo explained
-* first we will bring up X number of nodes in http services (fork child process)
+* first we will bring up X number of nodes in http/grpc services (fork child process)
 * then we introduce the nodes to each other (the nodes will now elect a leader)
 * we wait for a while and then we kill the current leader (the nodes will now elect a new leader)
 * we wait for a while again and then bring the old leader back online (the initial leader will now be re-elected)

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package nodeproto;
+
+// The peer service definition.
+service Peer {
+  rpc Inbox (PeerMessage) returns (Resp) {}
+  rpc Ping (Ping) returns (Resp) {}
+  rpc Peers (AddPeers) returns (Resp) {}
+}
+
+// The request message containing the type and the sender (the same used for responses)
+message PeerMessage {
+  string type = 1;
+  int32 sender = 2;
+}
+message Ping {
+  string msg = 1;
+}
+message AddPeers {
+  repeated int32 peers = 1;
+}
+message Resp {
+  string msg = 1;
+}

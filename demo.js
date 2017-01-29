@@ -5,16 +5,24 @@ console.log('\u001B[2J\u001B[0;0f');
 console.log('(Quit with CTRL + C)\n');
 
 const http = require('http');
+const grpc = require('grpc');
 const fork = require('child_process').fork;
 const nodes = [];
 const nodeIds = [];
-const numOfNodes = parseInt(process.argv[2]) || 5;
-const basePort = 8000;
+const numOfNodes = parseInt(process.argv[2]);
+const protocol = process.argv[3];
+
+
+const basePort = 9000;
 for (let i = 1; i <= numOfNodes; i++) {
     nodeIds.push(basePort + i);
 }
 process.setMaxListeners(numOfNodes);
 
+if (protocol !== 'http' && protocol !== 'grpc') {
+    console.log('no wrapper implemented for this protocol, thank you for playing');
+    process.exit(0);
+}
 // run the demo
 initNodes(nodeIds, () => {
     introduceNodes(nodes, () => {
@@ -31,7 +39,7 @@ function initNodes(nodeIds, done, index) {
     index = index || 0;
     const nodeId = nodeIds[index];
     console.log(`initiating node [${nodeId}]`);
-    const nodeProc = fork('./wrapper/http.js', [nodeId], {
+    const nodeProc = fork(`./wrapper/${protocol}.js`, [nodeId], {
         silent: true
     });
     nodeProc.on('message', (msg) => {
@@ -75,6 +83,15 @@ function waitAWhileThenBringTheInitialLeaderBackOnline(done) {
 }
 
 function introduceNodes(nodes, done, index) {
+    if (protocol === 'http') {
+        return introduceHttpNodes(nodes, done, index);
+    }
+    if (protocol === 'grpc') {
+        return introduceGrpcNodes(nodes, done, index);
+    }
+}
+
+function introduceHttpNodes(nodes, done, index) {
     index = index || 0;
     const nodeId = nodes[index].id;
     const options = {
@@ -87,7 +104,7 @@ function introduceNodes(nodes, done, index) {
         if (response.statusCode == 200) {
             index++;
             if (index < nodeIds.length) {
-                introduceNodes(nodes, done, index);
+                introduceHttpNodes(nodes, done, index);
             } else {
                 done();
             }
@@ -100,10 +117,31 @@ function introduceNodes(nodes, done, index) {
     req.end();
 }
 
+function introduceGrpcNodes(nodes, done, index) {
+    index = index || 0;
+    const nodeId = nodes[index].id;
+    const node_proto = grpc.load('./node.proto').nodeproto;
+    let client = new node_proto.Peer('0.0.0.0:' + nodeId,
+        grpc.credentials.createInsecure());
+    client.peers({
+        peers: nodeIds
+    }, function(err, response) {
+        if (err) {
+            return console.log('ERROR', err);
+        }
+        index++;
+        if (index < nodeIds.length) {
+            introduceGrpcNodes(nodes, done, index);
+        } else {
+            done();
+        }
+    });
+}
+
 function bringInitialLeaderBackOnline(done) {
     const initialLeaderIndex = nodes.length - 1;
     const initialLeader = nodes[initialLeaderIndex];
-    initialLeader.proc = fork('./wrapper/http', [initialLeader.id], {
+    initialLeader.proc = fork(`./wrapper/${protocol}`, [initialLeader.id], {
         silent: true
     });
     initialLeader.proc.on('message', (msg) => {
@@ -123,18 +161,40 @@ function waitAWhileThenHaveRogueNodeClaimThrone() {
     setTimeout(() => {
         console.log('> Rogue node claims the throne, nodes will re-elect old leader\n'.toUpperCase());
         nodeIds.forEach((port) => {
-            const options = {
-                host: 'localhost',
-                path: '/inbox',
-                port: port,
-                method: 'POST'
-            };
-            const req = http.request(options, (response) => {});
-            req.write(JSON.stringify({
-                type: 'COORDINATOR',
-                sender: basePort // will be smaller than all of the active ports/nodes
-            }));
-            req.end();
+            if (protocol === 'http') {
+              return rougeHttpNodeClaimThrone(port);
+            }
+            if (protocol === 'grpc') {
+              return rougeGrpcNodeClaimThrone(port);
+            }
         });
     }, 2000 * nodes.length);
+}
+
+function rougeHttpNodeClaimThrone(port) {
+  const options = {
+      host: 'localhost',
+      path: '/inbox',
+      port: port,
+      method: 'POST'
+  };
+  const req = http.request(options, (response) => {});
+  req.write(JSON.stringify({
+      type: 'COORDINATOR',
+      sender: basePort
+  }));
+  req.end();
+}
+function rougeGrpcNodeClaimThrone(port) {
+  const node_proto = grpc.load('./node.proto').nodeproto;
+  let client = new node_proto.Peer('0.0.0.0:' + port,
+      grpc.credentials.createInsecure());
+  client.inbox({
+      type: 'COORDINATOR',
+      sender: basePort
+  }, function(err, response) {
+      if (err) {
+          return console.log('ERROR', err);
+      }
+  });
 }
