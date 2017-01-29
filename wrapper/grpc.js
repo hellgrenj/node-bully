@@ -9,8 +9,6 @@ const node = nodeFactory(nodeId, relativeElectionResponseTimeout);
 const grpcWrapper = {};
 const node_proto = grpc.load('./node.proto').nodeproto;
 
-const server = new grpc.Server();
-
 function inbox(call, callback) {
     if (call.request.type == 'COORDINATOR') {
         pingLeaderOnAnInterval();
@@ -37,6 +35,7 @@ function addPeers(call, callback) {
         msg: 'I received the list of nodes, thank you!'
     });
 }
+const server = new grpc.Server();
 server.addProtoService(node_proto.Peer.service, {
     inbox: inbox,
     ping: ping,
