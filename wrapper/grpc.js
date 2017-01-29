@@ -10,25 +10,38 @@ const grpcWrapper = {};
 const node_proto = grpc.load('./node.proto').nodeproto;
 
 const server = new grpc.Server();
+
 function inbox(call, callback) {
-  if (call.request.type == 'COORDINATOR') {
-      pingLeaderOnAnInterval();
-  }
-  node.inbox(call.request.type, {
-      sender: parseInt(call.request.sender)
-  });
-  callback(null, {msg: ''});
+    if (call.request.type == 'COORDINATOR') {
+        pingLeaderOnAnInterval();
+    }
+    node.inbox(call.request.type, {
+        sender: parseInt(call.request.sender)
+    });
+    callback(null, {
+        msg: ''
+    });
 }
+
 function ping(call, callback) {
-  callback(null, {msg: 'PONG'});
+    callback(null, {
+        msg: 'PONG'
+    });
 }
+
 function addPeers(call, callback) {
-  node.addPeers(call.request.peers.filter((p) => {
-      return p != node.id;
-  }));
-  callback(null, {msg: 'I received the list of nodes, thank you!'});
+    node.addPeers(call.request.peers.filter((p) => {
+        return p != node.id;
+    }));
+    callback(null, {
+        msg: 'I received the list of nodes, thank you!'
+    });
 }
-server.addProtoService(node_proto.Peer.service, {inbox: inbox, ping: ping, peers: addPeers});
+server.addProtoService(node_proto.Peer.service, {
+    inbox: inbox,
+    ping: ping,
+    peers: addPeers
+});
 server.bind('0.0.0.0:' + nodeId, grpc.ServerCredentials.createInsecure());
 server.start();
 
@@ -53,24 +66,28 @@ node.events.on('COORDINATOR', (e) => {
 });
 
 function sendToPeer(port, payload) {
-  let client = new node_proto.Peer('0.0.0.0:' + port,
-  grpc.credentials.createInsecure());
-  client.inbox(payload, function(err, response) {
-    if(err){console.log(err);}
-  });
+    let client = new node_proto.Peer('0.0.0.0:' + port,
+        grpc.credentials.createInsecure());
+    client.inbox(payload, function(err, response) {
+        if (err) {
+            console.log(err);
+        }
+    });
 }
 
 function pingLeaderOnAnInterval() {
     clearInterval(grpcWrapper.pingLeaderInterval);
     grpcWrapper.pingLeaderInterval = setInterval(() => {
         if (node.id !== node.currentLeader) {
-          const client = new node_proto.Peer('0.0.0.0:' + node.currentLeader,
-          grpc.credentials.createInsecure());
-          client.ping({msg:'ping'}, function(err, response) {
-            if(err || response.msg !== 'PONG') {
-              return node.removePeer(node.currentLeader);
-            };
-          });
+            const client = new node_proto.Peer('0.0.0.0:' + node.currentLeader,
+                grpc.credentials.createInsecure());
+            client.ping({
+                msg: 'ping'
+            }, function(err, response) {
+                if (err || response.msg !== 'PONG') {
+                    return node.removePeer(node.currentLeader);
+                }
+            });
         }
     }, 500 * node.peers.length);
 }
